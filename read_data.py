@@ -7,7 +7,7 @@ import cv2
 
 if __name__ == "__main__":
 
-    serial_port = serial.Serial(port="COM3", baudrate = 9600)
+    serial_port = serial.Serial(port="COM5", baudrate = 9600)
 
     # réinitialisation
     serial_port.setDTR(False)
@@ -18,10 +18,10 @@ if __name__ == "__main__":
     serial_port.flushInput()
 
     # lecture des données
-    taillex = 14#nombre de cellules du capteur
-    tailley = 6
+    taillex = 18#nombre de cellules du capteur
+    tailley = 9
     taille = taillex*tailley
-    temps_record = 200
+    temps_record = 2000
     tablel = np.zeros((taille,1))
     table_through_time = np.zeros((taillex,tailley,temps_record))
 
