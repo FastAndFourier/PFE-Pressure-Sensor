@@ -33,7 +33,7 @@ def servo_full_sweep(arduino,print_=False,sleep=0):
 
 if __name__ == "__main__":
 
-    serial_port = serial.Serial(port="COM4", baudrate = 115200,timeout=0.9)
+    serial_port = serial.Serial(port="COM6", baudrate = 115200,timeout=0.9)
 
     servo_full_sweep(serial_port,print_=False,sleep=1)
     serial_port.close()
