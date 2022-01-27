@@ -38,8 +38,8 @@ void control_servo(){
     pos_pan_ = incomingByte.substring(0,ind_sep).toInt();
     pos_tilt_ = incomingByte.substring(ind_sep+1,incomingByte.length()).toInt();
     
-    pan.write(pos_pan_);
-    tilt.write(pos_tilt_);
+    pan.write(pan.read()+ pos_pan_);
+    tilt.write(tilt.read() + pos_tilt_);
 
     
   }
