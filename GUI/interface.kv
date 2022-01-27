@@ -1,0 +1,29 @@
+#:kivy 2.0.0
+
+
+<Home>:
+    #FloatLayout:
+    name: "Home"
+
+    BoxLayout:
+        size_hint: None, None
+        size: 600, 200
+        center: root.center
+
+        Button:
+            text: 'Leg'
+            font_size: 30
+            #size_hint: None, None
+            on_release: app.root.current = "LegScreen"
+        Button:
+            text: 'Arm'
+            font_size: 30
+            #size_hint: None, None
+
+<LegWindow>:
+    name: "LegScreen"
+    Image:
+        source: "xbox360.png"
+        size: self.texture_size
+
+        
