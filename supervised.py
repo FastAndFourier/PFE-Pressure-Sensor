@@ -96,35 +96,38 @@ def servo_full_sweep(arduino, print_=False,sleep=0):
     arduino.write(('0/0\n').encode())  
 
     arduino.readline()
-
-    for pos_pan in range(20,130,10):
-        for pos_tilt in range(50,130,10):
-            pos = str(pos_pan) + '/' + str(pos_tilt) + '\n'
+    plt.figure()
+    #pan = bas, tilt = haut
+    for pos_pan in [50]:
+        for pos_tilt in [50]:
+            #print(pos_pan)
+            #print(pos_tilt)
+            pos = str(50) + '/' + str(50) + '\n'
+            #print(pos.encode())
             arduino.write(pos.encode())
-            arduino.read(4).decode()
             
             time.sleep(.1)
-            image_data = read_captor()
+            #image_data = read_captor()
             
-            table_img = cv2.resize((image_data.T*255/1024).astype(np.uint8),(18*50,9*50))   
-            heatmap = cv2.applyColorMap(table_img, cv2.COLORMAP_HOT)
+            #table_img = cv2.resize((image_data.T*255/1024).astype(np.uint8),(18*50,9*50))   
+            #heatmap = cv2.applyColorMap(table_img, cv2.COLORMAP_HOT)
 
        
 
-            cv2.imshow('Recording',heatmap)
-            if cv2.waitKey(0) & 0xFF == ord('q'):
-                break
-            cv2.destroyAllWindows() 
-            
-            keyboard_input = read_keyboard()
+            #plt.figimage(heatmap)
+            #cv2.waitKey(1)
+            #cv2.destroyAllWindows() 
+            #plt.draw()
+            #plt.pause(0.001)
+            #keyboard_input = read_keyboard()
             
             
        
-    arduino.write(('0/0\n').encode()) 
+    arduino.write(('5/5\n').encode()) 
 
 if __name__ == "__main__":
     print("Recording Start!")
-    plt.ion()
+    #plt.ion()
     serial_port = serial.Serial(port="COM6", baudrate = 115200,timeout=0.9)
     
     #image_data = read_captor()
