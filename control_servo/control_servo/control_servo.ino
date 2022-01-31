@@ -11,10 +11,10 @@ void setup() {
   Serial.begin(115200);
   // initialize the LED pin as an output:
   pan.attach(8);
-  pan.write(0);
+  pan.write(100);
 
   tilt.attach(9);
-  tilt.write(0);
+  tilt.write(100);
 
 }
 
@@ -38,7 +38,7 @@ void control_servo(){
     pos_pan_ = incomingByte.substring(0,ind_sep).toInt();
     pos_tilt_ = incomingByte.substring(ind_sep+1,incomingByte.length()).toInt();
     
-    pan.write(pan.read()+ pos_pan_);
+    pan.write(pan.read() + pos_pan_);
     tilt.write(tilt.read() + pos_tilt_);
 
     

@@ -7,6 +7,8 @@ import time
 
 import torch as th
 
+from control_policy import normalize
+
 from control_policy import policyNet, predict
 
 def read_captor():
@@ -20,7 +22,7 @@ def read_captor():
     serial_port.flushInput()
     
     # lecture des données
-    taillex = 18#nombre de cellules du capteur
+    taillex = 11#nombre de cellules du capteur
     tailley = 9
     taille = taillex*tailley
     
@@ -116,74 +118,41 @@ def get_expert_action(pos_pan,pos_tilt):
     return advice
 
 def states_to_actions(arduino, print_=False,sleep=0):
+ 
 
-    #time.sleep(1)
-    # Init each servo to 0
-    #arduino.write(('0/0\n').encode())  
-
-    #arduino.readline()
     plt.figure()
-    #pan = bas, tilt = haut
 
     pos_pan = 0
     pos_tilt = 0
-
     demonstration = []
-
-    incr = 10
-
+    incr = 5
     observation = []
     action = []
 
-    # print("Zero measure")
-    # measure = input()
-    # while measure!='.':
-    #     measure = input()
+    policy_network = th.load("./expert_policy_truncated.pt")
+    norm = normalize()
     
-    # zero = read_captor()
-    # print("zero done")
-    # observation.append(zero)
+    done = False
+    while not done:
 
-    policy_network = th.load("./expert_policy.pt")
-
-    print(type(policy_network))
-
-    
-
-    for nb_step in range(0,10,1):
-
-        measure = input()
-        while measure!='.':
-            measure = input()
-        
         obs = read_captor()
         observation.append(obs)
-        print(obs)
-        act = predict(np.array(obs),policy_network)#get_expert_action(pos_pan,pos_tilt)
+        
+        #print(obs.shape)
+        obs = obs.reshape((1,99))
+
+        time.sleep(0.3)
+        act = predict((norm(obs)),policy_network,incr)[0]#get_expert_action(pos_pan,pos_tilt)
         print(act)
 
-        #action.append(act)
-        #demonstration.append([obs,action])
-        # measure = input()
-        # while measure not in ['00','10','01','11']:
-        #     measure = input()
-
         pos = str(act[0]) + '/' + str(act[1]) + '\n'
-        #print(pos.encode())
+        
         arduino.write(pos.encode())
 
         pos_tilt += incr
 
-        #if(i_tilt == 130): print("Last one be ready")
-            
-        # np.save('./observation3.npy',np.array(observation),allow_pickle=True)
-        # np.save('./action3.npy',np.array(action),allow_pickle=True)
-        #print("return")
-        #pos = str(10) + '/' + str(-170) + '\n'
-        arduino.write(pos.encode())
-
-        # pos_pan += incr
-        # pos_tilt = 0
+        time.sleep(0.2)
+        
 
 def servo_full_sweep(arduino, print_=False,sleep=0):
 

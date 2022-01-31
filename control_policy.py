@@ -109,7 +109,7 @@ class policyNet(nn.Module):
 
         return x
 
-def predict(obs,policy):
+def predict(obs,policy,incr):
 
         n_obs = obs.shape[0]
         #if type(obs==np.ndarray) and obs.shape[1]!=99:
@@ -120,7 +120,7 @@ def predict(obs,policy):
         #print(len(obs))
         action = policy(obs).detach().numpy()
         #print(len(action))
-        action = [[round(a[0]*10),round(a[1]*10)] for a in action]
+        action = [[a[0]*incr,a[1]*incr] for a in action]
 
         return action
 
