@@ -56,8 +56,9 @@ class policyNet(nn.Module):
 
 def predict(obs,policy):
 
-    obs = torch.tensor(obs).float()
+    obs = torch.flatten(torch.tensor(obs).float())
+    print(policy)
     action = policy(obs).detach().numpy()
     action = [action[0]*10,action[1]*10]
 
-    return predict
+    return action
