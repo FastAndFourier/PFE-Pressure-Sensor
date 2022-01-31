@@ -46,7 +46,7 @@ class customDataset(torch.utils.data.Dataset):
         for k in range(len(self.obs)):
             self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
             self.action = np.concatenate((self.action,self.action[k][::-1][np.newaxis]),axis=0)
-        
+
 
 class policyNet(nn.Module):
     def __init__(self) -> None:
@@ -64,6 +64,14 @@ class policyNet(nn.Module):
 
         return x
 
+def predict(obs,policy):
+
+        obs = torch.flatten(torch.tensor(obs).float())
+        print(policy)
+        action = policy(obs).detach().numpy()
+        action = [action[0]*10,action[1]*10]
+
+        return action
 
 def imitation(dataset,epochs,learning_rate):
 
