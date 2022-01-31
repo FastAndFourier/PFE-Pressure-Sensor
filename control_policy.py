@@ -8,19 +8,19 @@ import os
 os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
 
 
-class upperCrop(object):
+# class upperCrop(object):
 
-    def __call__(self, sample):
-        return sample[7:]
+#     def __call__(self, sample):
+#         return sample[7:]
 
 class normalize(object):
 
     def __call__(self,sample):
+        
         mu = np.mean(sample)
         std = np.std(sample)
+
         return (sample-mu)/std
-
-
 
 
 class customDataset(torch.utils.data.Dataset):
@@ -78,7 +78,6 @@ class customDataset(torch.utils.data.Dataset):
         shape_data = self.obs[0].shape
         print("Before augmentation: ",self.obs.shape)
         for k in range(len(self.obs)):
-<<<<<<< HEAD
             self.obs = np.append(self.obs,np.fliplr(self.obs[k])[np.newaxis],axis=0)
             self.action = np.append(self.action,np.array([self.action[k][0],-self.action[k][1]])[np.newaxis],axis=0)
             #self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
@@ -91,32 +90,20 @@ class customDataset(torch.utils.data.Dataset):
             
         print("After augmentation: ",self.obs.shape)
         
-=======
-            self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
-            self.action = np.concatenate((self.action,self.action[k][::-1][np.newaxis]),axis=0)
-
->>>>>>> 6e2559c41a1fedd907710ecc38e87e219d0861e6
 
 class policyNet(nn.Module):
     def __init__(self) -> None:
         super().__init__()
     
-        self.lin1 = nn.Linear(11*9,128)
-        self.lin1a = nn.Linear(128,32) 
-        self.do1 = nn.Dropout(p=0.2)
+        self.lin1 = nn.Linear(11*9,32)
         self.lin2 = nn.Linear(32,16)
         self.do2 = nn.Dropout(p=0.2)
         self.lin3 = nn.Linear(16,2)
         
     def forward(self,x):
-        
-        # x = torch.relu(self.lin1(x))
-        # x = torch.relu(self.lin1a(x))
-        x = nn.SELU(self.lin1(x))
-        x = nn.SELU(self.lin1a(x))
-        x = self.do1(x)
-        #x = torch.relu(self.lin2(x))
-        x = nn.SELU(self.lin2(x))
+        #print(x.shape)
+        x = torch.relu(self.lin1(x))
+        x = torch.relu(self.lin2(x))
         x = self.do2(x)
         x = torch.tanh(self.lin3(x))
 
@@ -124,10 +111,16 @@ class policyNet(nn.Module):
 
 def predict(obs,policy):
 
-        obs = torch.flatten(torch.tensor(obs).float())
-        print(policy)
+        n_obs = obs.shape[0]
+        #if type(obs==np.ndarray) and obs.shape[1]!=99:
+        if obs.shape[1]==99:
+            obs = torch.tensor(obs).float()
+        else:
+            obs = torch.tensor(obs.reshape(n_obs,9*11)).float()
+        #print(len(obs))
         action = policy(obs).detach().numpy()
-        action = [action[0]*10,action[1]*10]
+        #print(len(action))
+        action = [[round(a[0]*10),round(a[1]*10)] for a in action]
 
         return action
 
@@ -176,8 +169,9 @@ if __name__ == "__main__":
     augmentData = True
 
     dataset = customDataset(["./action.npy","./action1.npy","./action2.npy","./action3.npy"],
-                            ["./observation.npy","./observation1.npy","./observation2.npy","./observation3.npy"],
-                            augmentData=augmentData,transform=[upperCrop(),normalize()])
+                            ["./observation_cropped.npy","./observation1_cropped.npy",
+                            "./observation2_cropped.npy","./observation3_cropped.npy"],
+                            augmentData=augmentData,transform=[normalize()])
     
 
     len_trainDataset = int(.8*len(dataset))
@@ -190,8 +184,8 @@ if __name__ == "__main__":
     trainLoader = DataLoader(trainDataset,batch_size=batch_size,shuffle=True)
     testLoader = DataLoader(testDataset,batch_size=batch_size,shuffle=True)
 
-    policy, loss_array = imitation(trainLoader,epochs=epochs,learning_rate=0.001)
-    torch.save(policy,"./expert_policy_truncated.pt")
+    #policy, loss_array = imitation(trainLoader,epochs=epochs,learning_rate=0.001)
+    #torch.save(policy,"./expert_policy_truncated.pt")
     policy = torch.load('./expert_policy_truncated.pt')
     
     test_loss = 0.0
@@ -202,14 +196,14 @@ if __name__ == "__main__":
     with torch.no_grad():
         for sample in testLoader:
             obs, labels = sample
+            #print(obs.detach().numpy().shape)
             outputs = policy(obs.float())
-            print(outputs,labels)
             temp =  loss_func(outputs,labels.float())
             test_loss += temp.item()
 
     print(f'Loss on test set {test_loss/testLoader.__len__():.3f}')
 
-    plt.figure()
-    plt.plot([round(loss_,2) for loss_ in loss_array])
-    plt.show()
+    # plt.figure()
+    # plt.plot([round(loss_,2) for loss_ in loss_array])
+    # plt.show()
 
