@@ -78,6 +78,7 @@ class customDataset(torch.utils.data.Dataset):
         shape_data = self.obs[0].shape
         print("Before augmentation: ",self.obs.shape)
         for k in range(len(self.obs)):
+<<<<<<< HEAD
             self.obs = np.append(self.obs,np.fliplr(self.obs[k])[np.newaxis],axis=0)
             self.action = np.append(self.action,np.array([self.action[k][0],-self.action[k][1]])[np.newaxis],axis=0)
             #self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
@@ -90,6 +91,11 @@ class customDataset(torch.utils.data.Dataset):
             
         print("After augmentation: ",self.obs.shape)
         
+=======
+            self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
+            self.action = np.concatenate((self.action,self.action[k][::-1][np.newaxis]),axis=0)
+
+>>>>>>> 6e2559c41a1fedd907710ecc38e87e219d0861e6
 
 class policyNet(nn.Module):
     def __init__(self) -> None:
@@ -116,6 +122,14 @@ class policyNet(nn.Module):
 
         return x
 
+def predict(obs,policy):
+
+        obs = torch.flatten(torch.tensor(obs).float())
+        print(policy)
+        action = policy(obs).detach().numpy()
+        action = [action[0]*10,action[1]*10]
+
+        return action
 
 def imitation(dataset,epochs,learning_rate):
 
