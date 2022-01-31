@@ -4,9 +4,28 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"]="TRUE"
+
+
+class upperCrop(object):
+
+    def __call__(self, sample):
+        return sample[7:]
+
+class normalize(object):
+
+    def __call__(self,sample):
+        mu = np.mean(sample)
+        std = np.std(sample)
+        return (sample-mu)/std
+
+
+
+
 class customDataset(torch.utils.data.Dataset):
 
-    def __init__(self,path_action,path_obs,augmentData=False) -> None:
+    def __init__(self,path_action,path_obs,transform=[None],augmentData=False) -> None:
 
         self.action = np.load(path_action[0])
         if len(path_action) > 1:
@@ -20,10 +39,24 @@ class customDataset(torch.utils.data.Dataset):
 
 
         self.zero = np.load(path_obs[0])[0]
-        self.transform = None
-
+        
+        self.transform = transform
+        
         if augmentData:
             self.dataAugmentation()
+        
+        if self.transform:
+            
+            for transform in self.transform:
+                self.zero = transform(self.zero)
+            
+            temp_obs = []
+            for k in range(len(self.obs)):
+                sample = self.obs[k]
+                for transform in self.transform:
+                    sample = transform(sample)
+                temp_obs.append(sample)
+            self.obs = temp_obs
 
     def __len__(self):
         return len(self.obs)
@@ -33,33 +66,52 @@ class customDataset(torch.utils.data.Dataset):
         if torch.is_tensor(idx):
             idx = idx.tolist()
 
-        o = (self.obs[idx]/1028).flatten()
+        o = (self.obs[idx]).flatten()
         a = self.action[idx]
 
-        sample = [o,a]#{'observation': o, 'action': a}
-
+        sample = [o,a]
 
         return sample
 
     def dataAugmentation(self):
 
+        shape_data = self.obs[0].shape
+        print("Before augmentation: ",self.obs.shape)
         for k in range(len(self.obs)):
-            self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
-            self.action = np.concatenate((self.action,self.action[k][::-1][np.newaxis]),axis=0)
+            self.obs = np.append(self.obs,np.fliplr(self.obs[k])[np.newaxis],axis=0)
+            self.action = np.append(self.action,np.array([self.action[k][0],-self.action[k][1]])[np.newaxis],axis=0)
+            #self.obs = np.concatenate((self.obs,np.fliplr(self.obs[k])[np.newaxis]),axis=0)
+            #self.action = np.concatenate((self.action,np.array([self.action[k][0],-self.action[k][1]])[np.newaxis]),axis=0)
+
+        for k in range(len(self.obs)):
+            noise = np.random.normal(loc=0,scale=1.5,size=tuple(shape_data))
+            self.obs = np.append(self.obs,np.array(self.obs[k]+noise)[np.newaxis],axis=0)
+            self.action = np.append(self.action,self.action[k][np.newaxis],axis=0)
+            
+        print("After augmentation: ",self.obs.shape)
         
 
 class policyNet(nn.Module):
     def __init__(self) -> None:
         super().__init__()
-        #for k in range(len(layers)):
-        self.lin1 = nn.Linear(18*9,32)
+    
+        self.lin1 = nn.Linear(11*9,128)
+        self.lin1a = nn.Linear(128,32) 
+        self.do1 = nn.Dropout(p=0.2)
         self.lin2 = nn.Linear(32,16)
+        self.do2 = nn.Dropout(p=0.2)
         self.lin3 = nn.Linear(16,2)
         
     def forward(self,x):
         
-        x = torch.relu(self.lin1(x))
-        x = torch.relu(self.lin2(x))
+        # x = torch.relu(self.lin1(x))
+        # x = torch.relu(self.lin1a(x))
+        x = nn.SELU(self.lin1(x))
+        x = nn.SELU(self.lin1a(x))
+        x = self.do1(x)
+        #x = torch.relu(self.lin2(x))
+        x = nn.SELU(self.lin2(x))
+        x = self.do2(x)
         x = torch.tanh(self.lin3(x))
 
         return x
@@ -105,16 +157,16 @@ def imitation(dataset,epochs,learning_rate):
 if __name__ == "__main__":
 
 
-    epochs=1000
+    epochs=800
     batch_size=16
     augmentData = True
 
     dataset = customDataset(["./action.npy","./action1.npy","./action2.npy","./action3.npy"],
                             ["./observation.npy","./observation1.npy","./observation2.npy","./observation3.npy"],
-                            augmentData=augmentData)
+                            augmentData=augmentData,transform=[upperCrop(),normalize()])
     
 
-    len_trainDataset = int(.7*len(dataset))
+    len_trainDataset = int(.8*len(dataset))
 
     trainDataset, testDataset = torch.utils.data.random_split(dataset,[len_trainDataset,len(dataset)-len_trainDataset])
 
@@ -125,16 +177,19 @@ if __name__ == "__main__":
     testLoader = DataLoader(testDataset,batch_size=batch_size,shuffle=True)
 
     policy, loss_array = imitation(trainLoader,epochs=epochs,learning_rate=0.001)
-    torch.save(policy,"./expert_policy.pt")
-    policy = torch.load('./expert_policy.pt')
+    torch.save(policy,"./expert_policy_truncated.pt")
+    policy = torch.load('./expert_policy_truncated.pt')
     
     test_loss = 0.0
     loss_func = nn.MSELoss()
     
+    policy.eval()
+
     with torch.no_grad():
         for sample in testLoader:
             obs, labels = sample
             outputs = policy(obs.float())
+            print(outputs,labels)
             temp =  loss_func(outputs,labels.float())
             test_loss += temp.item()
 
