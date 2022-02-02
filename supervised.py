@@ -22,7 +22,7 @@ def read_captor():
     serial_port.flushInput()
     
     # lecture des données
-    taillex = 11#nombre de cellules du capteur
+    taillex = 18#nombre de cellules du capteur
     tailley = 9
     taille = taillex*tailley
     
@@ -129,7 +129,7 @@ def states_to_actions(arduino, print_=False,sleep=0):
     observation = []
     action = []
 
-    policy_network = th.load("./expert_policy_truncated.pt")
+    policy_network = th.load("./expert_policy3.pt")
     norm = normalize()
     
     done = False
@@ -139,7 +139,7 @@ def states_to_actions(arduino, print_=False,sleep=0):
         observation.append(obs)
         
         #print(obs.shape)
-        obs = obs.reshape((1,99))
+        obs = obs.reshape((1,162))
 
         time.sleep(0.3)
         act = predict((norm(obs)),policy_network,incr)[0]#get_expert_action(pos_pan,pos_tilt)
